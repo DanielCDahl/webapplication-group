@@ -1,0 +1,36 @@
+body {
+  background-color: #f8f9fa;
+}
+
+.hero-section {
+  min-height: 80vh;
+  background: 
+    linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+    url("https://images.unsplash.com/photo-1523381210434-271e8be1f52b");
+  background-size: cover;
+  background-position: center;
+}
+
+.product-card {
+  height: 100%;
+}
+
+.product-image {
+  height: 220px;
+  object-fit: contain;
+  padding: 1rem;
+  background-color: white;
+}
+
+.error-message {
+  min-height: 1.2rem;
+  font-size: 0.9rem;
+}
+
+.is-invalid {
+  border-color: #dc3545 !important;
+}
+
+.is-valid {
+  border-color: #198754 !important;
+}
