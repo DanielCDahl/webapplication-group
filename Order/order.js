@@ -26,188 +26,101 @@ const errors = {
 
 let selectedProduct = null;
 
+// Hämta vald produkt från URL
 async function loadSelectedProduct() {
   const params = new URLSearchParams(window.location.search);
   const productId = params.get("productId");
 
   if (!productId) {
-    productError.textContent = "No product selected. Please choose a product from the Products page.";
+    productError.textContent = "No product selected. Please choose a product first.";
+    productError.classList.remove("d-none");
     return;
   }
 
   try {
-    const response = await fetch(`https://fakestoreapi.com/products/${productId}`);
-
-    if (!response.ok) {
-      throw new Error("Could not fetch product");
-    }
+    const response = await fetch(`https://dummyjson.com/products/${productId}`);
+    if (!response.ok) throw new Error("Could not fetch product");
 
     selectedProduct = await response.json();
 
     selectedProductTitle.textContent = selectedProduct.title;
     selectedProductPrice.textContent = `Price: $${selectedProduct.price}`;
     selectedProductCard.classList.remove("d-none");
-    productError.textContent = "";
+    productError.classList.add("d-none");
   } catch (error) {
-    console.error(error);
-    productError.textContent = "Could not load selected product.";
+    productError.textContent = "Failed to load product.";
+    productError.classList.remove("d-none");
   }
 }
 
-function setError(field, message) {
-  field.classList.add("is-invalid");
-  field.classList.remove("is-valid");
-  errors[field.id].textContent = message;
+
+function setError(field, msg) { field.classList.add("is-invalid"); errors[field.id].textContent = msg; return false; }
+function setSuccess(field) { field.classList.remove("is-invalid"); errors[field.id].textContent = ""; return true; }
+
+function validateName() { 
+  const v = fields.name.value.trim(); 
+  if(v.length<2) return setError(fields.name,"Name must be at least 2 chars"); 
+  return setSuccess(fields.name);
 }
-
-function setSuccess(field) {
-  field.classList.remove("is-invalid");
-  field.classList.add("is-valid");
-  errors[field.id].textContent = "";
+function validateEmail(){ 
+  const v = fields.email.value.trim();
+  if(!v.includes("@")) return setError(fields.email,"Invalid email"); 
+  return setSuccess(fields.email);
 }
-
-function validateName() {
-  const value = fields.name.value.trim();
-
-  if (value.length < 2) {
-    setError(fields.name, "Name must contain at least 2 characters.");
-    return false;
-  }
-
-  if (value.length > 50) {
-    setError(fields.name, "Name may contain a maximum of 50 characters.");
-    return false;
-  }
-
-  setSuccess(fields.name);
-  return true;
+function validatePhone(){ 
+  const v = fields.phone.value.trim(); 
+  if(!/^[0-9\-()]+$/.test(v)) return setError(fields.phone,"Invalid phone"); 
+  return setSuccess(fields.phone);
 }
+function validateStreet(){ return fields.street.value.trim().length<2? setError(fields.street,"Street too short"):setSuccess(fields.street);}
+function validatePostcode(){ return !/^\d{5}$/.test(fields.postcode.value.trim())? setError(fields.postcode,"Postcode must be 5 digits"):setSuccess(fields.postcode);}
+function validateCity(){ return fields.city.value.trim().length<2? setError(fields.city,"City too short"):setSuccess(fields.city);}
 
-function validateEmail() {
-  const value = fields.email.value.trim();
+// Lägg på input-event
+Object.keys(fields).forEach(k=>{
+  fields[k].addEventListener("input", ()=>{ 
+    eval("validate"+k.charAt(0).toUpperCase()+k.slice(1))(); 
+  });
+});
 
-  if (value.length === 0) {
-    setError(fields.email, "Email is required.");
-    return false;
-  }
-
-  if (!value.includes("@")) {
-    setError(fields.email, "Email must include @.");
-    return false;
-  }
-
-  if (value.length > 50) {
-    setError(fields.email, "Email may contain a maximum of 50 characters.");
-    return false;
-  }
-
-  setSuccess(fields.email);
-  return true;
-}
-
-function validatePhone() {
-  const value = fields.phone.value.trim();
-  const phonePattern = /^[0-9\-()]+$/;
-
-  if (value.length === 0) {
-    setError(fields.phone, "Phone number is required.");
-    return false;
-  }
-
-  if (value.length > 20) {
-    setError(fields.phone, "Phone number may contain a maximum of 20 characters.");
-    return false;
-  }
-
-  if (!phonePattern.test(value)) {
-    setError(fields.phone, "Phone may only include digits, -, and ().");
-    return false;
-  }
-
-  setSuccess(fields.phone);
-  return true;
-}
-
-function validateStreet() {
-  const value = fields.street.value.trim();
-
-  if (value.length < 2) {
-    setError(fields.street, "Street address must contain at least 2 characters.");
-    return false;
-  }
-
-  if (value.length > 50) {
-    setError(fields.street, "Street address may contain a maximum of 50 characters.");
-    return false;
-  }
-
-  setSuccess(fields.street);
-  return true;
-}
-
-function validatePostcode() {
-  const value = fields.postcode.value.trim();
-
-  if (!/^\d{5}$/.test(value)) {
-    setError(fields.postcode, "Post code must contain exactly 5 digits.");
-    return false;
-  }
-
-  setSuccess(fields.postcode);
-  return true;
-}
-
-function validateCity() {
-  const value = fields.city.value.trim();
-
-  if (value.length < 2) {
-    setError(fields.city, "City must contain at least 2 characters.");
-    return false;
-  }
-
-  if (value.length > 20) {
-    setError(fields.city, "City may contain a maximum of 20 characters.");
-    return false;
-  }
-
-  setSuccess(fields.city);
-  return true;
-}
-
-fields.name.addEventListener("input", validateName);
-fields.email.addEventListener("input", validateEmail);
-fields.phone.addEventListener("input", validatePhone);
-fields.street.addEventListener("input", validateStreet);
-fields.postcode.addEventListener("input", validatePostcode);
-fields.city.addEventListener("input", validateCity);
-
-orderForm.addEventListener("submit", (e) => {
+orderForm.addEventListener("submit",(e)=>{
   e.preventDefault();
-  successMessage.classList.add("d-none");
+  if(!selectedProduct) return;
 
-  if (!selectedProduct) {
-    productError.textContent = "Please select a product from the Products page before ordering.";
-    return;
-  }
+  const valid = validateName()&&validateEmail()&&validatePhone()&&validateStreet()&&validatePostcode()&&validateCity();
+  if(!valid) return;
 
-  const isValid =
-    validateName() &&
-    validateEmail() &&
-    validatePhone() &&
-    validateStreet() &&
-    validatePostcode() &&
-    validateCity();
+  
+  const order = {
+    product: selectedProduct,
+    customer: {
+      name: fields.name.value,
+      email: fields.email.value,
+      phone: fields.phone.value,
+      street: fields.street.value,
+      postcode: fields.postcode.value,
+      city: fields.city.value
+    }
+  };
 
-  if (isValid) {
-    successMessage.classList.remove("d-none");
-    successMessage.textContent = `Thank you! Your order for "${selectedProduct.title}" has been placed.`;
+ 
+  let cart = JSON.parse(localStorage.getItem("cart")) || [];
+  cart.push(order);
+  localStorage.setItem("cart", JSON.stringify(cart));
 
-    orderForm.reset();
+  
+  successMessage.innerHTML = `
+    <strong>Order placed successfully!</strong><br>
+    <strong>Product:</strong> ${selectedProduct.title} ($${selectedProduct.price})<br>
+    <strong>Name:</strong> ${fields.name.value}<br>
+    <strong>Email:</strong> ${fields.email.value}<br>
+    <strong>Phone:</strong> ${fields.phone.value}<br>
+    <strong>Address:</strong> ${fields.street.value}, ${fields.postcode.value} ${fields.city.value}
+  `;
+  successMessage.classList.remove("d-none");
 
-    Object.values(fields).forEach((field) => {
-      field.classList.remove("is-valid");
-    });
-  }
+  orderForm.reset();
+  Object.values(fields).forEach(f=>f.classList.remove("is-valid"));
 });
 
 loadSelectedProduct();
